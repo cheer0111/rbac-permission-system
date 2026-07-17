@@ -6,6 +6,13 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 
+/**
+ * MyBatis-Plus 自动填充处理器
+ * <p>
+ * INSERT 时填充 createTime 和 updateTime
+ * UPDATE 时填充 updateTime
+ * 对应实体字段需标注 @TableField(fill = FieldFill.INSERT / INSERT_UPDATE)
+ */
 @Component
 public class MyMetaObjectHandler implements MetaObjectHandler {
     @Override

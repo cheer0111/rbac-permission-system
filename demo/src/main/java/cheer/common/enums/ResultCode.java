@@ -3,6 +3,9 @@ package cheer.common.enums;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+/**
+ * 统一响应状态码枚举
+ */
 @Getter
 @AllArgsConstructor
 public enum ResultCode {
@@ -15,6 +18,8 @@ public enum ResultCode {
     DATA_EXISTS(409, "数据已存在"),
     SERVER_ERROR(500, "服务器内部错误");
 
+    /** HTTP 状态码 */
     private final Integer code;
+    /** 提示信息 */
     private final String message;
 }

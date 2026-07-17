@@ -9,7 +9,6 @@ import cheer.mapper.UserRoleMapper;
 import cheer.service.MenuService;
 import cheer.vo.MenuTreeVO;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +25,14 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+/**
+ * 菜单服务实现
+ * <p>
+ * 核心功能：
+ * 1. 菜单树构建（扁平列表 → 树形结构，递归填充 children）
+ * 2. 动态菜单查询（userId → roleIds → menuIds → 菜单列表 → 树）
+ * 3. Redis 缓存（读穿透 + 降级，缓存 30 分钟）
+ */
 @Slf4j
 @Service
 public class MenuServiceImpl extends ServiceImpl<MenuMapper, Menu> implements MenuService {
@@ -39,17 +46,22 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, Menu> implements Me
     private StringRedisTemplate stringRedisTemplate;
     @Autowired
     private ObjectMapper objectMapper;
+
+    /** 缓存 key 前缀 */
     private static final String USER_PERMS_KEY_PREFIX = "user:perms:";
     private static final String USER_MENU_TREE_KEY_PREFIX = "user:menuTree:";
     private static final String MENU_TREE_KEY_PREFIX = "menu:tree:";
+    /** 缓存过期时间 */
     private static final long CACHE_TTL_MINUTES = 30;
 
+    @Override
     public List<MenuTreeVO> buildTree(List<Menu> menus) {
         List<MenuTreeVO> vos = menus.stream()
                 .map(this::toVO)
                 .collect(Collectors.toList());
         List<MenuTreeVO> treeVOS = new ArrayList<>();
         for (MenuTreeVO vo : vos) {
+            // parentId == 0 表示顶级节点
             if (vo.getParentId() != null && vo.getParentId().equals(0L)) {
                 fillChildren(vo, vos);
                 treeVOS.add(vo);
@@ -58,9 +70,13 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, Menu> implements Me
         return treeVOS;
     }
 
+    /**
+     * 获取全量菜单树（缓存优先，读穿透 + 降级查库）
+     */
     @Override
     public List<MenuTreeVO> tree() {
         String key = MENU_TREE_KEY_PREFIX + "all";
+        // 读缓存
         try {
             String json = stringRedisTemplate.opsForValue().get(key);
             if (json != null) {
@@ -70,6 +86,7 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, Menu> implements Me
         } catch (Exception e) {
             log.warn("读取菜单树缓存失败，降级查库: {}", e.getMessage());
         }
+        // 查库 + 写缓存
         List<Menu> menu = menuMapper.selectList(null);
         try {
             stringRedisTemplate.opsForValue().set(key, objectMapper.writeValueAsString(menu), CACHE_TTL_MINUTES, TimeUnit.MINUTES);
@@ -79,12 +96,18 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, Menu> implements Me
         return buildTree(menu);
     }
 
+    /**
+     * 实体转 VO
+     */
     private MenuTreeVO toVO(Menu menu) {
         MenuTreeVO vo = new MenuTreeVO();
         BeanUtils.copyProperties(menu, vo);
         return vo;
     }
 
+    /**
+     * 递归填充子节点：遍历所有 VO，将 parentId 匹配的挂到父节点的 children 下
+     */
     private void fillChildren(MenuTreeVO parent, List<MenuTreeVO> allVOs) {
         for (MenuTreeVO vo : allVOs) {
             if (Objects.equals(vo.getParentId(), parent.getId())) {
@@ -94,6 +117,9 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, Menu> implements Me
         }
     }
 
+    /**
+     * 根据用户ID查询其角色ID列表
+     */
     private List<Long> getRoleIdsByUserId(Long userId) {
         LambdaQueryWrapper<UserRole> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(UserRole::getUserId, userId);
@@ -103,6 +129,9 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, Menu> implements Me
                 .collect(Collectors.toList());
     }
 
+    /**
+     * 根据角色ID列表查询其关联的菜单ID列表
+     */
     private List<Long> getMenuIdsByRoleIdList(List<Long> roleIds) {
         LambdaQueryWrapper<RoleMenu> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.in(RoleMenu::getRoleId, roleIds);
@@ -112,6 +141,10 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, Menu> implements Me
                 .collect(Collectors.toList());
     }
 
+    /**
+     * 链路查询：userId → roleIds → menuIds → 菜单列表
+     * 任意一步为空直接返回空列表，避免无效 SQL
+     */
     private List<Menu> getMenusByUserId(Long userId) {
         List<Long> roleIds = getRoleIdsByUserId(userId);
         if (roleIds.isEmpty()) {
@@ -125,10 +158,13 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, Menu> implements Me
 
         LambdaQueryWrapper<Menu> wrapper = new LambdaQueryWrapper<>();
         wrapper.in(Menu::getId, menuIds);
-
         return menuMapper.selectList(wrapper);
     }
 
+    /**
+     * 获取指定用户的动态菜单树（缓存优先）
+     */
+    @Override
     public List<MenuTreeVO> userTree(Long userId) {
         String key = USER_MENU_TREE_KEY_PREFIX + userId;
         try {
@@ -148,6 +184,11 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, Menu> implements Me
         return tree;
     }
 
+    /**
+     * 获取指定用户的所有权限标识（缓存优先）
+     * 从菜单中提取 perms 字段，过滤空值，去重
+     */
+    @Override
     public List<String> getPermissionsByUserId(Long userId) {
         String key = USER_PERMS_KEY_PREFIX + userId;
         try {
@@ -173,6 +214,9 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, Menu> implements Me
         return perms;
     }
 
+    /**
+     * 清除指定用户的权限缓存和菜单树缓存（角色/菜单变更后调用）
+     */
     public void evictUserPermsCache(Long userId) {
         stringRedisTemplate.delete(USER_PERMS_KEY_PREFIX + userId);
         stringRedisTemplate.delete(USER_MENU_TREE_KEY_PREFIX + userId);

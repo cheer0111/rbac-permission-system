@@ -26,6 +26,12 @@ import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * 操作日志 AOP 切面
+ * <p>
+ * 拦截所有带 @OperationLog 注解的方法，记录操作人、请求信息、参数、返回结果、耗时等，异步写入数据库。
+ * 日志写入失败不影响主业务（try-catch 兜底），业务异常不被吞掉（重新抛出）。
+ */
 @Slf4j
 @Aspect
 @Component
@@ -34,6 +40,7 @@ public class OperationLogAspect {
     @Autowired
     private OperateLogService operateLogService;
 
+    /** 自定义 ObjectMapper（注册 JavaTimeModule 支持 LocalDateTime） */
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public OperationLogAspect() {
@@ -121,7 +128,10 @@ public class OperationLogAspect {
     }
 
     /**
-     * 序列化参数为 JSON，过滤不可序列化对象（HttpServletRequest 等），对 password 字段脱敏
+     * 序列化参数为 JSON
+     * <p>
+     * - 过滤 HttpServletRequest/Response/MultipartFile 等不可序列化对象
+     * - 对 password/pwd 字段脱敏（替换为 ******）
      */
     private String toJsonString(Object[] args, MethodSignature signature) {
         try {

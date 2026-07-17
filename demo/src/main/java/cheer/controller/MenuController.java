@@ -12,18 +12,29 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * 菜单控制器
+ */
 @RestController
 @RequestMapping("/menu")
 public class MenuController {
     @Autowired
     private MenuService menuService;
 
+    /**
+     * 获取全量菜单树（管理员视角）
+     */
     @GetMapping("/tree")
     public Result<List<MenuTreeVO>> list() {
         List<MenuTreeVO> vos = menuService.tree();
         return Result.success(vos, ResultCode.SUCCESS, "查看成功");
     }
 
+    /**
+     * 获取指定用户的动态菜单树（根据角色过滤）
+     *
+     * @param id 用户ID
+     */
     @GetMapping("/tree/user/{id}")
     public Result<List<MenuTreeVO>> userList(@PathVariable Long id) {
         List<MenuTreeVO> vos = menuService.userTree(id);
