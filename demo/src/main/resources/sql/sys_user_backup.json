@@ -1,0 +1,20 @@
+{
+  "sys_user": [
+    {"id":1943123456789012001,"username":"zhangsan","password":"(明文)","nickname":"张三","avatar":"https://cdn.test.com/avatar/1.png","email":"zhangsan@test.com","phone":"13800000001","status":1},
+    {"id":1943123456789012002,"username":"lisi","password":"(明文)","nickname":"李四","avatar":"https://cdn.test.com/avatar/2.png","email":"lisi@test.com","phone":"13800000002","status":1},
+    {"id":1943123456789012003,"username":"wangwu","password":"(明文)","nickname":"王五","avatar":null,"email":"wangwu@test.com","phone":"13800000003","status":1},
+    {"id":1943123456789012004,"username":"disabled_user","password":"(明文)","nickname":"被禁用用户","avatar":null,"email":"disabled@test.com","phone":"13800000004","status":0},
+    {"id":1943123456789012005,"username":"deleted_user","password":"(明文)","nickname":"已删除用户","avatar":null,"email":"deleted@test.com","phone":"13800000005","status":1,"del_flag":1},
+    {"id":1943123456789012006,"username":"test'or1=1--","password":"(明文)","nickname":"注入测试","avatar":null,"email":"sqltest@test.com","phone":"13800000006","status":1},
+    {"id":1943123456789012007,"username":"no_email_user","password":"(明文)","nickname":"无邮箱用户","avatar":null,"email":null,"phone":"13800000007","status":1},
+    {"id":1943123456789012008,"username":"no_phone_user","password":"(明文)","nickname":"无手机号用户","avatar":null,"email":"nophone@test.com","phone":null,"status":1},
+    {"id":1943123456789012009,"username":"emoji_user","password":"(明文)","nickname":"快乐小天使😊🎉","avatar":null,"email":"emoji@test.com","phone":"13800000009","status":1},
+    {"id":1943123456789012010,"username":"this_is_a_very_long_username_for_boundary_testing_case_number10","password":"(明文)","nickname":"边界测试用户","avatar":null,"email":"boundary@test.com","phone":"13800000010","status":1}
+  ],
+  "sys_user_role": [
+    {"user_id":1943123456789012001,"role_id":1001},
+    {"user_id":1943123456789012002,"role_id":1002},
+    {"user_id":1943123456789012003,"role_id":1002}
+  ],
+  "note": "所有用户原始密码均为 123456，备份时间 2026-07-17"
+}
