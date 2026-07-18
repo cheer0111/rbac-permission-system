@@ -20,7 +20,7 @@
 | 4 | Spring Security + JWT | ✅ 已完成 |
 | 5 | Redis 缓存 + Redisson 分布式锁 | ✅ 已完成 |
 | 6 | AOP 操作日志 + Knife4j | ✅ 已完成 |
-| 7 | RabbitMQ 异步消息 | ⬜ 未开始 |
+| 7 | RabbitMQ 异步消息 | ✅ 已完成 |
 | 8 | 定时任务 + 文件存储 | ⬜ 未开始 |
 | 9 | Docker 容器化部署 | ⬜ 未开始 |
 | 10 | （可选）Spring Cloud Alibaba 微服务化 | ⬜ 未开始 |
@@ -186,13 +186,28 @@
 
 用户要求：不用每完成一小步就来确认，自己按节奏推进，卡住了才会主动来问。Claude 不用等用户逐一回报任务1/2的完成情况就可以继续布置下一个任务；但仍然是"用户写代码、Claude 出设计/审查"的分工不变。
 
-## 下一步
+**任务 9｜RabbitMQ 异步消息（阶段7）** —— ✅ 已完成（2026-07-18）
 
-1. **阶段7：RabbitMQ 异步消息**
-2. 之后顺序：阶段8（定时任务 + 文件存储）→ 阶段9（Docker 容器化部署）→ ...
+实现清单：
+1. ✅ pom.xml 加依赖：spring-boot-starter-amqp
+2. ✅ application.yml 配置 spring.rabbitmq（5672/guest/publisher-confirm/publisher-returns）
+3. ✅ RabbitMQConfig：Jackson2JsonMessageConverter + DirectExchange/Queue/Binding 声明
+4. ✅ NotifyLog 实体 + NotifyLogMapper + sys_notify_log 建表
+5. ✅ 生产者：UserServiceImpl.add 发送 Map 消息（userId+username）到 MQ
+6. ✅ 消费者：MqConsumer @RabbitListener 监听 → 解析消息 → NotifyLog insert（成功/失败均记录）
+
+**踩坑修复记录（本次会话）**
+- RabbitMQ 4.3.0 卸载后 3.13.7 安装端口冲突 → sc delete + rmdir 清理旧数据和服务
+- convertAndSend 缺 Exchange/routingKey 参数，只传了 Queue 名
+- MqConsumer 缺 @RabbitListener 注解、参数类型用 String 应为 Map
+
+**下一步**
+1. **阶段8：定时任务 + 文件存储**
+2. 之后顺序：阶段9（Docker 容器化部署）→ 阶段10（可选 Spring Cloud Alibaba）
 
 ## 变更记录
 
+- 2026-07-18：任务9（阶段7）RabbitMQ 异步消息验收通过——spring-boot-starter-amqp + RabbitMQConfig（DirectExchange/Queue/Binding/Jackson2JsonMessageConverter）+ UserServiceImpl 生产者 + MqConsumer @RabbitListener 消费者 + sys_notify_log 通知日志表。**阶段7 完成，前七个阶段全部关闭。**
 - 2026-07-17：任务8（阶段6）AOP 操作日志 + Knife4j 验收通过——@OperationLog 注解 + OperationLogAspect 切面（@Async 异步落库、password 脱敏、JavaTimeModule 序列化）+ Knife4j 文档页（/doc.html 可访问）。**阶段6 完成，前六个阶段全部关闭。**
 - 2026-07-14：任务7（阶段5）PreventDuplicateAspect review 通过——RLock tryLock(waitTime=0)+leaseTime 冷却期、SpEL key 解析、成功不释放/失败释放。**阶段5 完成，前五个阶段全部关闭。**
 
