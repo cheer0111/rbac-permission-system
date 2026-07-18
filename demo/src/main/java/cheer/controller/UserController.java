@@ -62,8 +62,8 @@ public class UserController {
      * 用户头像上传
      */
     @PostMapping("/avatar")
-    public Result<String> uploadAvatar(@RequestParam MultipartFile file) {
-        String url = fileService.store(file);
+    public Result<String> uploadAvatar(@RequestParam MultipartFile avatar) {
+        String url = fileService.store(avatar);
         Long userId = (Long) SecurityContextHolder
                 .getContext()
                 .getAuthentication()
