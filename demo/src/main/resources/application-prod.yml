@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    druid:
+      url: jdbc:mysql://mysql:3306/rbac?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+  rabbitmq:
+    host: rabbitmq
+  data:
+    redis:
+      host: redis
+  devtools:
+    restart:
+      enabled: false
+    livereload:
+      enabled: false
+file:
+  upload:
+    path: /app/uploads
