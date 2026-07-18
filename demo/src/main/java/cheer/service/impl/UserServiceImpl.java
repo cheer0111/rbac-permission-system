@@ -78,4 +78,12 @@ public class UserServiceImpl implements UserService {
         // MP 的 @TableLogic 会自动将 deleteById 转为逻辑删除（UPDATE SET del_flag=1）
         userMapper.deleteById(id);
     }
+
+    @Override
+    public void upload(String avatar, Long id) {
+        User user = new User();
+        user.setId(id);
+        user.setAvatar(avatar);
+        userMapper.updateById(user);
+    }
 }

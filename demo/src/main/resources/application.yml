@@ -66,3 +66,8 @@ knife4j:
   enable: true
   setting:
     language: zh_cn
+file:
+  upload:
+    path: D:\mySpringboot\uploads
+    max-size: 10MB
+    max-request-size: 10MB
