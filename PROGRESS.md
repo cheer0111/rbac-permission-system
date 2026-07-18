@@ -21,7 +21,7 @@
 | 5 | Redis 缓存 + Redisson 分布式锁 | ✅ 已完成 |
 | 6 | AOP 操作日志 + Knife4j | ✅ 已完成 |
 | 7 | RabbitMQ 异步消息 | ✅ 已完成 |
-| 8 | 定时任务 + 文件存储 | ⬜ 未开始 |
+| 8 | 定时任务 + 文件存储 | ✅ 已完成 |
 | 9 | Docker 容器化部署 | ⬜ 未开始 |
 | 10 | （可选）Spring Cloud Alibaba 微服务化 | ⬜ 未开始 |
 
@@ -201,12 +201,32 @@
 - convertAndSend 缺 Exchange/routingKey 参数，只传了 Queue 名
 - MqConsumer 缺 @RabbitListener 注解、参数类型用 String 应为 Map
 
+**任务 10｜定时任务 + 文件存储（阶段8）** —— ✅ 已完成（2026-07-18）
+
+实现清单：
+1. ✅ DemoApplication 加 `@EnableScheduling`
+2. ✅ ScheduledTask：每天凌晨2点清理30天前通知日志（`lt` 方向正确）
+3. ✅ ScheduledTask：每天凌晨3点刷新 Redis 菜单缓存（menu:tree/user:menuTree/user:perms 三组 key）
+4. ✅ FileService：抽取公共文件存储逻辑（日期目录 + UUID 文件名 + BusinessException）
+5. ✅ FileController：`POST /file/upload` 调用 FileService
+6. ✅ WebMvcConfig：静态资源映射 `/uploads/**` → 本地文件目录
+7. ✅ UserController：`POST /user/avatar` 上传头像（SecurityContext 取 userId → FileService.store → userService.upload 更新）
+8. ✅ UserService 接口清理：删除 `add` 方法的 `throws JsonProcessingException`
+
+**踩坑修复记录（本次会话）**
+- 定时清理用了 `ge`（>=）导致会删最近30天数据 → 改为 `lt`（<）
+- Postman 上传文件选了 x-www-form-urlencoded 而非 form-data → 切换为 form-data + File 类型
+- Postman 手动设 Content-Type: multipart/form-data 覆盖了自动 boundary → 删除手动 Header
+- UserController 上传逻辑与 FileController 完全重复 → 抽取 FileService 公共服务
+- `addUser` 残留 `throws JsonProcessingException`（阶段3遗留）→ 清理
+
 **下一步**
-1. **阶段8：定时任务 + 文件存储**
-2. 之后顺序：阶段9（Docker 容器化部署）→ 阶段10（可选 Spring Cloud Alibaba）
+1. **阶段9：Docker 容器化部署**
+2. 之后顺序：阶段10（可选 Spring Cloud Alibaba）
 
 ## 变更记录
 
+- 2026-07-18：任务10（阶段8）定时任务 + 文件存储验收通过——@EnableScheduling + ScheduledTask（清理过期通知日志/刷新Redis菜单缓存）+ FileService 公共文件存储 + FileController 上传接口 + WebMvcConfig 静态资源映射 + UserController 头像上传接口（SecurityContext取userId）。**阶段8 完成，前八个阶段全部关闭。**
 - 2026-07-18：任务9（阶段7）RabbitMQ 异步消息验收通过——spring-boot-starter-amqp + RabbitMQConfig（DirectExchange/Queue/Binding/Jackson2JsonMessageConverter）+ UserServiceImpl 生产者 + MqConsumer @RabbitListener 消费者 + sys_notify_log 通知日志表。**阶段7 完成，前七个阶段全部关闭。**
 - 2026-07-17：任务8（阶段6）AOP 操作日志 + Knife4j 验收通过——@OperationLog 注解 + OperationLogAspect 切面（@Async 异步落库、password 脱敏、JavaTimeModule 序列化）+ Knife4j 文档页（/doc.html 可访问）。**阶段6 完成，前六个阶段全部关闭。**
 - 2026-07-14：任务7（阶段5）PreventDuplicateAspect review 通过——RLock tryLock(waitTime=0)+leaseTime 冷却期、SpEL key 解析、成功不释放/失败释放。**阶段5 完成，前五个阶段全部关闭。**
