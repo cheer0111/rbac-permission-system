@@ -3,6 +3,7 @@ package cheer.service;
 import cheer.dto.UserDTO;
 import cheer.entity.User;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.fasterxml.jackson.core.JsonProcessingException;
 
 /**
  * 用户服务接口
@@ -15,7 +16,7 @@ public interface UserService {
      * @param userDTO 用户信息
      * @return 入库后的用户对象（含雪花ID）
      */
-    User add(UserDTO userDTO);
+    User add(UserDTO userDTO) throws JsonProcessingException;
 
     /**
      * 用户分页条件查询

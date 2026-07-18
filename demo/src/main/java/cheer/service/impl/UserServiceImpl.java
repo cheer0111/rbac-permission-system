@@ -1,5 +1,6 @@
 package cheer.service.impl;
 
+import cheer.common.config.RabbitMQConfig;
 import cheer.common.enums.ResultCode;
 import cheer.common.exception.BusinessException;
 import cheer.dto.UserDTO;
@@ -8,11 +9,15 @@ import cheer.mapper.UserMapper;
 import cheer.service.UserService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.BeanUtils;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 用户服务实现
@@ -23,6 +28,8 @@ public class UserServiceImpl implements UserService {
     UserMapper userMapper;
     @Autowired
     PasswordEncoder passwordEncoder;
+    @Autowired
+    RabbitTemplate rabbitTemplate;
 
     @Override
     public User add(UserDTO userDTO) {
@@ -41,6 +48,14 @@ public class UserServiceImpl implements UserService {
         user.setAvatar(null);
         user.setDelFlag(0);
         userMapper.insert(user);
+        Map<String, Object> messages = new HashMap<>();
+        messages.put("userId", user.getId());
+        messages.put("username", user.getUsername());
+        rabbitTemplate.convertAndSend(
+                RabbitMQConfig.WELCOME_EXCHANGE,
+                RabbitMQConfig.WELCOME_ROUTING_KEY,
+                messages
+        );
         return user;
     }
 

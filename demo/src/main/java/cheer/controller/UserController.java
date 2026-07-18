@@ -7,6 +7,7 @@ import cheer.dto.UserDTO;
 import cheer.entity.User;
 import cheer.service.UserService;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -42,7 +43,7 @@ public class UserController {
     @OperationLog(title = "用户管理", businessType = 1)
     @PostMapping("/add")
     @PreAuthorize("hasAuthority('system:user:add')")
-    Result<User> addUser(@Valid UserDTO userDTO) {
+    Result<User> addUser(@Valid UserDTO userDTO) throws JsonProcessingException {
         User user = userService.add(userDTO);
         return Result.success(user, ResultCode.SUCCESS, "插入成功");
     }

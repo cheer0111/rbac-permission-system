@@ -22,6 +22,16 @@ spring:
         enabled: true
         url-pattern: /*
         exclusions: "*.js,*.gif,*.jpg,*.png,*.css,*.ico,/druid/*"
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    virtual-host: /
+    # 开启发布确认（消息到达 Exchange 时回调）
+    publisher-confirm-type: correlated
+    # 开启发布返回（消息从 Exchange 到达 Queue 失败时回调）
+    publisher-returns: true
   devtools:
     restart:
       enabled: true
